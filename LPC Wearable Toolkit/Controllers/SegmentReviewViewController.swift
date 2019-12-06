@@ -16,8 +16,7 @@ class SegmentReviewViewController: UIViewController, UICollectionViewDataSource,
     let tableCellReuseIdentifier = "SegmentCell"
     
     let videoStore = Videos()
-    var sport: String!
-    var action: Action!
+    var model: Model!
     var images:[(UIImage,Video)]!
     var segments:[Segment] = []
     
@@ -31,6 +30,8 @@ class SegmentReviewViewController: UIViewController, UICollectionViewDataSource,
     @IBOutlet weak var segmentsTableView: UITableView!
     
     @IBOutlet weak var doneButton: UIBarButtonItem!
+    
+    @IBOutlet weak var videoLabel: UILabel!
     
     let requiredAssetKeys = [
         "playable",
@@ -48,7 +49,7 @@ class SegmentReviewViewController: UIViewController, UICollectionViewDataSource,
         self.segmentsTableView.delegate = self
         self.segmentsTableView.dataSource = self
         
-        let videos = videoStore.fetch(sport: sport)
+        let videos = videoStore.fetch(model: model)
         print("Number of videos: \(videos.count)")
         images = videos.map({v -> (UIImage,Video) in
             do {
@@ -79,7 +80,10 @@ class SegmentReviewViewController: UIViewController, UICollectionViewDataSource,
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(width: 100, height: 100)
+        let widthSize = self.videoCollectionView.frame.width / 4
+        let heightSize = self.videoCollectionView.frame.height / 2
+        return CGSize(width: widthSize, height: heightSize)
+        //return CGSize(width: 100, height: 100)
     }
     
     func numberOfSections(in collectionView: UICollectionView) -> Int {
@@ -98,6 +102,8 @@ class SegmentReviewViewController: UIViewController, UICollectionViewDataSource,
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: collectionCellReuseIdentifier, for: indexPath) as! VideoCollectionViewCell
 
         cell.imageView.image = images[indexPath.item].0
+        cell.imageTitle.text = images[indexPath.item].1.name
+        cell.imageTitle.font = UIFont(name:"HelveticaNeue-Bold", size: 12.0)
         return cell
     }
     
@@ -111,7 +117,7 @@ class SegmentReviewViewController: UIViewController, UICollectionViewDataSource,
         self.addChildViewController(smallScreen)
         self.view.addSubview(smallScreen.view)
         smallScreen.didMove(toParentViewController: self)
-        smallScreen.view.frame = CGRect (x:0, y:50, width:UIScreen.main.bounds.width, height:UIScreen.main.bounds.height/3) // -50
+        smallScreen.view.frame = CGRect (x:0, y:100, width:UIScreen.main.bounds.width, height:UIScreen.main.bounds.height/3) // -50
         doneButton.isEnabled = true
     }
     
@@ -120,7 +126,7 @@ class SegmentReviewViewController: UIViewController, UICollectionViewDataSource,
         let video = images[indexPath.item].1
         let url = NSURL(fileURLWithPath: video.url!) as URL
         displayVideo(url)
-        
+        videoLabel.text = video.name
         segments = video.segments?.allObjects as! [Segment]
         segments.sort(by: {(s1,s2) in
             s1.start_ts < s2.start_ts
@@ -135,6 +141,7 @@ class SegmentReviewViewController: UIViewController, UICollectionViewDataSource,
         segments = []
         segmentsTableView.reloadData()
         self.doneButton.isEnabled = false
+        videoLabel.text = "Videos"
     }
     
     // MARK: UITableView stuff
