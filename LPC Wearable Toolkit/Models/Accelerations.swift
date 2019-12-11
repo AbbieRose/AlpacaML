@@ -117,7 +117,7 @@ class Accelerations {
     }
     
     //
-    func save(x: Double, y: Double, z: Double, model: Model, timestamp: Double) -> Acceleration? {
+    func save(x: Double, y: Double, z: Double, model: Model, timestamp: Double, mode: String) -> Acceleration? {
         
         guard let appDelegate =
             UIApplication.shared.delegate as? AppDelegate else {
@@ -141,7 +141,7 @@ class Accelerations {
         acceleration.setValue(y, forKeyPath: "yAcceleration")
         acceleration.setValue(z, forKeyPath: "zAcceleration")
         acceleration.setValue(timestamp, forKey: "timestamp")
-        
+        acceleration.setValue(mode, forKey: "mode")
         acceleration.model = model
         // 4
         do {

@@ -13,6 +13,7 @@ import UIKit
 class DTW {
     
     var trainingSet: [String:[[(Double,Double,Double)]]] = [:]
+    // they don't have orders right now and they should have orders
     
     func addToTrainingSet(label: String, data: [(Double,Double,Double)]) {
         if (trainingSet[label] != nil) {
@@ -23,22 +24,18 @@ class DTW {
     }
     
     // take best fit? or take one with most min distances?
-    func classify(test: [(Double, Double, Double)]) -> String {
-        var classification = ""
-        var minDistance = Double.infinity
+    func classify(test: [(Double, Double, Double)]) -> [(String,Double)] {
+        var rankedExamples:[(String,Double)] = []
         for key in trainingSet.keys {
             let set = trainingSet[key]
             for example in set! {
                 let result = dtw(trainingData: example, newData: test)
-                if result < minDistance {
-                    minDistance = result
-                    classification = key
-                }
+                rankedExamples.append((key,result))
             }
         }
         // will need some sort of threshold- what is no gesture detected?
         // should user set threshold? should user have to go through Varun's learning moment?
-        return classification + "|" + String(minDistance)
+        return rankedExamples
     }
     
     func distance(d1: (Double,Double,Double), d2: (Double,Double,Double)) -> Double {

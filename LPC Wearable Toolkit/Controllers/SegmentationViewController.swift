@@ -358,7 +358,7 @@ class SegmentationViewController: UIViewController, ChartViewDelegate, UIGesture
             print(acceleration)
             
             // DEBUG HERE
-            let acc_obj = self.accelerationStore.save(x: acceleration.0,y: acceleration.1,z: acceleration.2, model: model, timestamp: NSDate().timeIntervalSinceReferenceDate)
+            let acc_obj = self.accelerationStore.save(x: acceleration.0,y: acceleration.1,z: acceleration.2, model: model, timestamp: NSDate().timeIntervalSinceReferenceDate, mode: "Training") // we should make this an enum
             // print something here
             self.accelerationObjects.append(acc_obj!)
         } catch {

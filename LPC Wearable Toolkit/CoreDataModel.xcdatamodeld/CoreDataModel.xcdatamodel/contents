@@ -2,6 +2,7 @@
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="14490.99" systemVersion="18F132" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="Acceleration" representedClassName="Acceleration" syncable="YES" codeGenerationType="class">
         <attribute name="id" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES" syncable="YES"/>
+        <attribute name="mode" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="timestamp" optional="YES" attributeType="Double" defaultValueString="0" usesScalarValueType="YES" syncable="YES"/>
         <attribute name="xAcceleration" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES" syncable="YES"/>
         <attribute name="yAcceleration" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES" syncable="YES"/>
@@ -13,6 +14,9 @@
         <attribute name="categories" optional="YES" attributeType="Transformable" customClassName="[String]" syncable="YES"/>
         <attribute name="name" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="sport" optional="YES" attributeType="String" syncable="YES"/>
+    </entity>
+    <entity name="Classification" representedClassName="Classification" syncable="YES" codeGenerationType="class">
+        <attribute name="label" optional="YES" attributeType="String" syncable="YES"/>
     </entity>
     <entity name="Model" representedClassName="Model" syncable="YES" codeGenerationType="class">
         <attribute name="labels" optional="YES" attributeType="Transformable" customClassName="[String]" syncable="YES"/>
@@ -54,12 +58,13 @@
         <relationship name="segments" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Segment" inverseName="video" inverseEntity="Segment" syncable="YES"/>
     </entity>
     <elements>
-        <element name="Acceleration" positionX="153" positionY="180" width="128" height="150"/>
+        <element name="Acceleration" positionX="153" positionY="180" width="128" height="165"/>
         <element name="Action" positionX="-452" positionY="-216" width="128" height="90"/>
+        <element name="Model" positionX="-218" positionY="-229" width="128" height="135"/>
         <element name="Peripheral" positionX="196" positionY="-162" width="128" height="105"/>
         <element name="Segment" positionX="-297" positionY="171" width="128" height="150"/>
-        <element name="Model" positionX="-218" positionY="-229" width="128" height="135"/>
         <element name="Tracker" positionX="-243" positionY="-81" width="128" height="120"/>
         <element name="Video" positionX="-65" positionY="-57" width="128" height="150"/>
+        <element name="Classification" positionX="-243" positionY="-81" width="128" height="60"/>
     </elements>
 </model>

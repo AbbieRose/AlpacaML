@@ -15,11 +15,13 @@ class ClassificationViewController: UIViewController, ChartViewDelegate {
     
     @IBOutlet weak var lineChart: LineChartView!
     @IBOutlet weak var classificationLabel: UILabel!
+    @IBOutlet weak var barChart: BarChartView!
     
     var accelerationStore = Accelerations()
     var segmentStore = Segments()
     var segmentList:[Segment]!
     var isCapturing = false
+    var classifications:[String]!
     
     var newAccelerations: [(Double,Double,Double)] = []
     var xAccelerations: [ChartDataEntry]!
@@ -30,14 +32,14 @@ class ClassificationViewController: UIViewController, ChartViewDelegate {
     var model:Model?
     let dtw = DTW()
     var previousClassification: String = "None"
-    var labels:Array<String>!
+    var colorDictionary:[String: UIColor] = [:]
     
     override func viewDidLoad() {
         super.viewDidLoad()
         self.title = "Test \(model?.name ?? "")"
         self.lineChart.delegate = self
         self.segmentList = segmentStore.fetch(model: model!, trainingSet: true)
-        labels = model?.labels
+        //labels = model?.labels
         for segment in segmentList {
             let video = segment.video
             let min_ts = video?.min_ts
@@ -49,6 +51,12 @@ class ClassificationViewController: UIViewController, ChartViewDelegate {
         }
         chunkSize = Int(self.getMaxSegmentLength())
         NotificationCenter.default.addObserver(self, selector: #selector(onDidUpdateValueFor(_:)), name: BluetoothNotification.didUpdateValueFor.notification, object: nil)
+        classifications = model?.labels
+        // setting up color dictionary for label groupings
+        let individualLabels = Array(Set(classifications))
+        for l in 0..<individualLabels.count {
+            colorDictionary[individualLabels[l]] = ChartColorTemplates.joyful()[l]
+        }
     }
     
     override func didReceiveMemoryWarning() {
@@ -71,6 +79,11 @@ class ClassificationViewController: UIViewController, ChartViewDelegate {
         } else {
             sender.setTitle("Go", for: .normal)
             sender.backgroundColor = UIColor(red: 69/255.0, green: 255/255.0, blue: 190/255.0, alpha: 1.0)
+            // do all in loops
+            for acc in newAccelerations {
+                //self.accelerationStore.save(x: acc.0,y: acc.1,z: acc.2, model: model ?? Model(), timestamp: NSDate().timeIntervalSinceReferenceDate, mode: "Testing")
+            }
+            newAccelerations = []
         }
     }
     
@@ -79,21 +92,26 @@ class ClassificationViewController: UIViewController, ChartViewDelegate {
         DispatchQueue.global(qos: .userInitiated).async {
             let maxIndex = self.newAccelerations.count - 1
             let test = self.newAccelerations[(maxIndex-self.chunkSize)..<maxIndex]
-            let classification = self.dtw.classify(test: Array(test))
+            
+            let classificationArray = self.dtw.classify(test: Array(test))
+            let classification = classificationArray.min(by: {$0.1 < $1.1})!.0
+            
             DispatchQueue.main.async {
                 let classified = classification.split(separator: "|")[0].lowercased()
-                if classified.starts(with: "none") || (classified == self.previousClassification) {
+                let labels = classificationArray.map { $0.0 }
+                let values = classificationArray.map { round($0.1)/100.00 }
+                if (classified == self.previousClassification) || classified.starts(with: "none") {
                     self.classificationLabel.text = ""
                     self.previousClassification = classified
                 } else {
-                    // speak classifications and send them as WebRTC messages
                     self.classificationLabel.text = classification // yes I think we do want to show the full string. right? for now
-                    // send a message via WebRTC
-                    self.sendWebRTCData(dataToSend: String(classification.split(separator: "|")[0]))
+                    self.setBarChart(dataPoints: labels, values: values)
                     // speak the classification
                     let utterance = AVSpeechUtterance(string: classified)
                     let synthesizer = AVSpeechSynthesizer()
                     synthesizer.speak(utterance)
+                    // send a message via WebRTC
+                    self.sendWebRTCData(dataToSend: String(classification.split(separator: "|")[0]))
                     self.previousClassification = classified
                 }
             }
@@ -124,7 +142,7 @@ class ClassificationViewController: UIViewController, ChartViewDelegate {
     
     // MARK - Chart functions
     
-    private func updateChart() {
+    private func updateLineChart() {
         DispatchQueue.global(qos: .userInitiated).async {
             self.xAccelerations = [ChartDataEntry]()
             self.yAccelerations = [ChartDataEntry]()
@@ -175,7 +193,7 @@ class ClassificationViewController: UIViewController, ChartViewDelegate {
                     newAccelerations.append(contentsOf: accelerations)
                     // TODO: what do we want to save from here?
                     //accelerationStore.save(x: acceleration.0, y: acceleration.1, z: acceleration.2, timestamp: NSDate().timeIntervalSinceReferenceDate, sport: sport,  id: 1)
-                    updateChart()
+                    updateLineChart()
                     if newAccelerations.count > chunkSize {
                         classifyChunk()
                     }
@@ -190,6 +208,49 @@ class ClassificationViewController: UIViewController, ChartViewDelegate {
         let longest = segmentList.max(by: {g1, g2 in (g1.stop_ts - g1.start_ts) < (g2.stop_ts - g2.start_ts)} )
         print("Start: \(String(describing: longest?.start_ts)), Stop: \(String(describing: longest?.stop_ts))")
         return (longest?.stop_ts)! - (longest?.start_ts)!
+    }
+    
+    // MARK - Bar Chart Code, source: https://www.appcoda.com/ios-charts-api-tutorial/
+    // Add string labels: https://stackoverflow.com/questions/39049188/how-to-add-strings-on-x-axis-in-ios-charts
+    func setBarChart(dataPoints: [String], values: [Double]) {
+        let formatter:BarChartFormatter = BarChartFormatter(withLabels: dataPoints)
+        let xAxis:XAxis = barChart.xAxis
+        barChart.noDataText = "Press go to see a classification."
+        
+        let reversedValues = values.map( { 10000.0/$0 } )
+        
+        var dataEntries: [BarChartDataEntry] = []
+        
+        for i in 0..<dataPoints.count {
+            let dataEntry = BarChartDataEntry(x: Double(i), y: reversedValues[i] )
+            dataEntries.append(dataEntry)
+            _ = formatter.stringForValue(Double(i), axis: xAxis) // why?
+        }
+        xAxis.valueFormatter = formatter
+        
+        let chartDataSet = BarChartDataSet(values: dataEntries, label: "Cost")
+        // map color array from Joyful colors
+        let colorArray:[UIColor] = dataPoints.map({ colorDictionary[$0] ?? UIColor.black })
+        
+        chartDataSet.colors = colorArray
+        let chartData = BarChartData(dataSet: chartDataSet)
+        barChart.data = chartData
+        
+    }
+}
+
+@objc(BarChartFormatter)
+public class BarChartFormatter: NSObject, IAxisValueFormatter {
+    
+    var labels: [String]! = []
+    
+    // init might not work, be ready to create another function
+    init(withLabels: [String]) {
+        labels = withLabels // could do grouping work in here too
+    }
+    
+    public func stringForValue(_ value: Double, axis: AxisBase?) -> String {
+        return labels[Int(value)]
     }
     
 }
